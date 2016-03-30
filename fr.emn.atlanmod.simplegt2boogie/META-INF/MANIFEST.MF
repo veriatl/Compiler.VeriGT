@@ -1,0 +1,16 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: SimpleGT 2 Boogie compiler
+Bundle-SymbolicName: fr.emn.atlanmod.simplegt2boogie
+Bundle-Version: 1.0.0
+Bundle-Vendor: Zheng Cheng
+Require-Bundle: org.eclipse.xtend.lib,
+ com.google.guava,
+ org.eclipse.xtext.xbase.lib,
+ org.eclipse.emf.common,
+ org.eclipse.emf.ecore,
+ org.eclipse.emf.ecore.xmi,
+ org.eclipselabs.simplegt;bundle-version="2.0.2",
+ org.eclipselabs.simplegt.resource.simplegt;bundle-version="2.0.2",
+ org.emftext.commons.antlr3_4_0;bundle-version="3.4.0"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
