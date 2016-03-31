@@ -18,6 +18,10 @@ import org.eclipselabs.simplegt.resource.simplegt.mopp.SimplegtResourceFactory
 import org.eclipse.m2m.atl.emftvm.Model
 import org.eclipselabs.simpleocl.ModuleElement
 import org.eclipselabs.simplegt.Rule
+import java.util.ArrayList
+import java.util.HashMap
+import org.eclipselabs.simpleocl.OclExpression
+import org.eclipselabs.simpleocl.VariableExp
 
 class driver {
 
@@ -94,13 +98,63 @@ class driver {
 			«var isAdd = 1»
 			«FOR i : r.input.elements»
 				«IF i.varName == o.varName»
-					«{isAdd = 0; }»
+					«{isAdd = 0; ""}»
 				«ENDIF»
 			«ENDFOR»
 			«IF isAdd == 1»
 				«o.varName»: Add
 			«ENDIF»
-		«ENDFOR»		
+		«ENDFOR»	
+		
+		«var ib = new HashMap<String, OclExpression>»	
+		«var ob = new HashMap<String, OclExpression>»
+		
+		«FOR i : r.input.elements»
+			«IF i.bindings != null»
+				«FOR b : i.bindings»
+					«ib.put(i.varName+"."+i.type.name+"."+b.property, b.expr)»
+				«ENDFOR»
+			«ENDIF»
+		«ENDFOR»
+	
+		«FOR o : r.output.elements»
+			«IF o.bindings != null»
+				«FOR b : o.bindings»
+					«ob.put(o.varName+"."+o.type.name+"."+b.property, b.expr)»
+				«ENDFOR»
+			«ENDIF»
+		«ENDFOR»
+		
+		
+		«FOR k : ib.keySet»
+			«IF ob.keySet.contains(k)»
+				«IF oclEqualCheck(ib.get(k), ob.get(k))»
+					«k»: Preserved
+				«ELSE»
+					«k»: UPDATE
+				«ENDIF»
+			«ELSE»
+				«k»: DEL
+			«ENDIF»
+		«ENDFOR»
+		
+		«FOR k : ob.keySet»
+			«IF !ib.keySet.contains(k)»
+				«k»: ADD
+			«ENDIF»
+		«ENDFOR»
 	'''
+	
+	def oclEqualCheck(OclExpression expr1, OclExpression expr2) {
+		if(expr1.eClass().getName != expr2.eClass().getName){
+			false
+		}else{
+			switch(expr1.eClass().getName){
+				case "VariableExp": { if( (expr1 as VariableExp).getReferredVariable.getVarName == (expr2 as VariableExp).getReferredVariable.getVarName ) {true} else {false} }
+				default: false
+			}
+		}
+	}
+	
 	/* Code generation ends */
 }
