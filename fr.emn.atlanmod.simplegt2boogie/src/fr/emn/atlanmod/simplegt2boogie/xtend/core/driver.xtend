@@ -22,14 +22,65 @@ import java.util.ArrayList
 import java.util.HashMap
 import org.eclipselabs.simpleocl.OclExpression
 import org.eclipselabs.simpleocl.VariableExp
-
+import org.eclipse.emf.common.util.EList
+import org.eclipselabs.simplegt.InputElement
+import org.eclipse.emf.ecore.EClassifier
+import org.eclipse.emf.ecore.EClass
+// todo
+//- nac elements
 class driver {
-
+	
+	var fMap = new HashMap<String, String>
+	
 	def static void main(String[] args) {
-		new driver().generate("model/Pacman.simplegt")
+		new driver().generate("model/Pacman.simplegt", "model/Pacman.ecore")
 		println("finished")
 	}
 
+
+
+	def generate(String file, String mm) {
+		doEMFSetup
+		val rs = new ResourceSetImpl
+		val resource = rs.getResource(URI.createURI(file), true)
+		var srcmm = rs.getResource(URI.createURI(mm), true)
+		
+		fMap = getsfInfo(srcmm)
+		
+		for (content : resource.contents) {
+			println(generateModule(content))
+		}
+	}
+	
+	def getsfInfo(Resource resource) {
+		var r = new HashMap<String, String>
+		for (content : resource.contents) {
+			if(content instanceof EPackage){
+				for(c : content.getEClassifiers){
+					if(c instanceof EClass){
+						for(sf : c.getEStructuralFeatures()){
+							var nm = String.format("%s.%s", c.name, sf.name)
+							if(isPrimitive(sf.getEType.getName)){
+								r.put(nm, "primitive")
+							}else{
+								r.put(nm, "ref")
+							}						
+						}
+					}
+				}
+			}
+		}
+		return r
+	}
+	
+	def isPrimitive(String s) {
+		if(s == "EInt" || s == "EString" || s=="EBoolean")
+			true
+		else
+			false
+	}
+	
+	
 	def doEMFSetup() {
 		// load metamodels
 		EPackage$Registry.INSTANCE.put("http://eclipselabs.org/simplegt/2013/SimpleOCL", SimpleoclPackage.eINSTANCE)
@@ -39,16 +90,6 @@ class driver {
 		Resource$Factory.Registry.INSTANCE.extensionToFactoryMap.put("xmi", new XMIResourceFactoryImpl);
 		Resource$Factory.Registry.INSTANCE.extensionToFactoryMap.put("simplegt", new SimplegtResourceFactory());
 		Resource$Factory.Registry.INSTANCE.extensionToFactoryMap.put("ecore", new EcoreResourceFactoryImpl());
-	}
-
-	def generate(String file) {
-		doEMFSetup
-		val rs = new ResourceSetImpl
-		val resource = rs.getResource(URI.createURI(file), true)
-
-		for (content : resource.contents) {
-			println(generateModule(content))
-		}
 	}
 
 	/* Code generation starts */
@@ -64,21 +105,35 @@ class driver {
 		
 		«FOR e : mod.elements»
 			===
-			«genModuleElement(e)»
+			«genModuleElement_apply(e)»
 		«ENDFOR»
 	'''
 
 	// dispatcher
-	def dispatch genModuleElement(ModuleElement element) '''
+	def dispatch genModuleElement_apply(ModuleElement element) '''
 		_PlaceHolder
 	'''
 
 	// simplegt rule
-	def dispatch genModuleElement(Rule r) '''
-		procedure «r.name»_match(«FOR i : r.input.elements SEPARATOR ", "»«i.varName»: ref«ENDFOR») returns (b: bool);
-		// input are allocated
-
+	def dispatch genModuleElement_apply(Rule r) '''
+		procedure «r.name»_apply(«FOR i : r.input.elements SEPARATOR ", "»«i.varName»: ref«ENDFOR») returns (b: bool);
+	 	requires $Well_form(«getHeapName»);
+	 	// syntactic matching
+		requires Seq#Contains(findPatterns_«r.name»($srcHeap), «genInputSequence(r.input.elements)»);
 		// semantic matching
+		«FOR i : r.input.elements»
+			«FOR b : i.bindings»
+				«IF fMap.get(i.type.name+"."+b.property) == "primitive"»
+					requires read(«getHeapName», «i.varName», «i.type.name».«b.property») == «printOCL(b.expr)»;
+				«ENDIF»
+			«ENDFOR»
+		«ENDFOR»
+		// nac
+		«FOR n : r.nac»
+				
+		«ENDFOR»
+		modifies «getHeapName»;
+		ensures $Well_form(«getHeapName»);
 		«FOR i : r.input.elements»
 			«var isDel = 0»
 			«FOR o : r.output.elements»
@@ -145,6 +200,26 @@ class driver {
 		«ENDFOR»
 	'''
 	
+
+	
+	def genInputSequence(EList<InputElement> list) {
+		var i = 0
+		var r = ""
+		for(e : list){
+			if(i == 0){
+				r += "Seq#Singleton("+e.varName+")";
+			}else{
+				r = "Seq#Build("+ r + ","+ e.varName +")";
+			}
+			i++
+		}
+		r
+	}
+	
+	def getHeapName() {
+		"$srcHeap"
+	}
+	
 	def oclEqualCheck(OclExpression expr1, OclExpression expr2) {
 		if(expr1.eClass().getName != expr2.eClass().getName){
 			false
@@ -156,5 +231,17 @@ class driver {
 		}
 	}
 	
+	def dispatch printOCL(OclExpression expr) '''
+	'''
+	
+	def dispatch printOCL(IntegerExp expr) '''«expr.integerSymbol»'''
+	
+	def dispatch printOCL(PropertyCallExp expr) '''
+	«FOR call : expr.calls»
+		«IF expr.source instanceof VariableExp && call instanceof NavigationOrAttributeCall»
+			read(«getHeapName», «(expr.source as VariableExp).referredVariable.varName», «(expr.source as VariableExp).referredVariable.type.name».«(call as NavigationOrAttributeCall).name»)	
+		«ENDIF»	
+	«ENDFOR»
+	'''
 	/* Code generation ends */
 }
