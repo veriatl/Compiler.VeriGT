@@ -1,210 +1,210 @@
 module simplyDisco;
 
 
-metamodel P : 'platform:/resource/Pacman/metamodels/Pacman.ecore';
-transform b : P;
+metamodel pacman : 'platform:/resource/Pacman/metamodels/Pacman.ecore';
+transform b : pacman;
 
 
 rule PlayerMoveLeft{
 	from
-		s : P!GameState(STATE=~3, record=~rec),
-		rec: P!Record,
-		pac: P!Pacman,
-		grid2: P!Grid,
-		grid1: P!Grid(hasPlayer=~pac, left=~grid2),
-		act : P!Action(DONEBY=~1, FRAME=~rec.FRAME, DIRECTION=~1)
-	not grid2: P!Grid(hasEnemy=~ghost), ghost: P!Ghost
+		s : pacman!GameState(STATE=~3, record=~rec),
+		rec: pacman!Record,
+		pac: pacman!Pacman,
+		grid2: pacman!Grid,
+		grid1: pacman!Grid(hasPlayer=~pac, left=~grid2),
+		act : pacman!Action(DONEBY=~1, FRAME=~rec.FRAME, DIRECTION=~1)
+	not grid2: pacman!Grid(hasEnemy=~ghost), ghost: pacman!Ghost
 	to 
-		s : P!GameState(STATE=~4, record=~rec),
-		rec: P!Record,
-		pac: P!Pacman,
-		grid2: P!Grid(hasPlayer=~pac),
-		grid1: P!Grid(left=~grid2)
+		s : pacman!GameState(STATE=~4, record=~rec),
+		rec: pacman!Record,
+		pac: pacman!Pacman,
+		grid2: pacman!Grid(hasPlayer=~pac),
+		grid1: pacman!Grid(left=~grid2)
 }
 
 rule PlayerMoveRight{
 	from
-		s : P!GameState(STATE=~3, record=~rec),
-		rec: P!Record,
-		pac: P!Pacman,
-		grid2: P!Grid,
-		grid1: P!Grid(hasPlayer=~pac, right=~grid2),
-		act : P!Action(DONEBY=~1, FRAME=~rec.FRAME, DIRECTION=~2)
-	not grid2: P!Grid(hasEnemy=~ghost), ghost: P!Ghost
+		s : pacman!GameState(STATE=~3, record=~rec),
+		rec: pacman!Record,
+		pac: pacman!Pacman,
+		grid2: pacman!Grid,
+		grid1: pacman!Grid(hasPlayer=~pac, right=~grid2),
+		act : pacman!Action(DONEBY=~1, FRAME=~rec.FRAME, DIRECTION=~2)
+	not grid2: pacman!Grid(hasEnemy=~ghost), ghost: pacman!Ghost
 	to 
-		s : P!GameState(STATE=~4, record=~rec),
-		rec: P!Record,
-		pac: P!Pacman,
-		grid2: P!Grid(hasPlayer=~pac),
-		grid1: P!Grid(right=~grid2)
+		s : pacman!GameState(STATE=~4, record=~rec),
+		rec: pacman!Record,
+		pac: pacman!Pacman,
+		grid2: pacman!Grid(hasPlayer=~pac),
+		grid1: pacman!Grid(right=~grid2)
 }
 
 rule PlayerMoveTop{
 	from
-		s : P!GameState(STATE=~3, record=~rec),
-		rec: P!Record,
-		pac: P!Pacman,
-		grid2: P!Grid,
-		grid1: P!Grid(hasPlayer=~pac, top=~grid2),
-		act : P!Action(DONEBY=~1, FRAME=~rec.FRAME, DIRECTION=~3)
-	not grid2: P!Grid(hasEnemy=~ghost), ghost: P!Ghost
+		s : pacman!GameState(STATE=~3, record=~rec),
+		rec: pacman!Record,
+		pac: pacman!Pacman,
+		grid2: pacman!Grid,
+		grid1: pacman!Grid(hasPlayer=~pac, top=~grid2),
+		act : pacman!Action(DONEBY=~1, FRAME=~rec.FRAME, DIRECTION=~3)
+	not grid2: pacman!Grid(hasEnemy=~ghost), ghost: pacman!Ghost
 	to 
-		s : P!GameState(STATE=~4, record=~rec),
-		rec: P!Record,
-		pac: P!Pacman,
-		grid2: P!Grid(hasPlayer=~pac),
-		grid1: P!Grid(top=~grid2)
+		s : pacman!GameState(STATE=~4, record=~rec),
+		rec: pacman!Record,
+		pac: pacman!Pacman,
+		grid2: pacman!Grid(hasPlayer=~pac),
+		grid1: pacman!Grid(top=~grid2)
 }
 
 rule PlayerMoveBottom{
 	from
-		s : P!GameState(STATE=~3, record=~rec),
-		rec: P!Record,
-		pac: P!Pacman,
-		grid2: P!Grid,
-		grid1: P!Grid(hasPlayer=~pac, bottom=~grid2),
-		act : P!Action(DONEBY=~1, FRAME=~rec.FRAME, DIRECTION=~4)
-	not grid2: P!Grid(hasEnemy=~ghost), ghost: P!Ghost
+		s : pacman!GameState(STATE=~3, record=~rec),
+		rec: pacman!Record,
+		pac: pacman!Pacman,
+		grid2: pacman!Grid,
+		grid1: pacman!Grid(hasPlayer=~pac, bottom=~grid2),
+		act : pacman!Action(DONEBY=~1, FRAME=~rec.FRAME, DIRECTION=~4)
+	not grid2: pacman!Grid(hasEnemy=~ghost), ghost: pacman!Ghost
 	to 
-		s : P!GameState(STATE=~4, record=~rec),
-		rec: P!Record,
-		pac: P!Pacman,
-		grid2: P!Grid(hasPlayer=~pac),
-		grid1: P!Grid(bottom=~grid2)
+		s : pacman!GameState(STATE=~4, record=~rec),
+		rec: pacman!Record,
+		pac: pacman!Pacman,
+		grid2: pacman!Grid(hasPlayer=~pac),
+		grid1: pacman!Grid(bottom=~grid2)
 }
 
 rule PlayerStay{
 	from
-		s : P!GameState(STATE=~3, record=~rec),
-		rec: P!Record,
-		pac: P!Pacman,
-		grid1: P!Grid(hasPlayer=~pac),
-		act : P!Action(DONEBY=~1, FRAME=~rec.FRAME, DIRECTION=~5)
+		s : pacman!GameState(STATE=~3, record=~rec),
+		rec: pacman!Record,
+		pac: pacman!Pacman,
+		grid1: pacman!Grid(hasPlayer=~pac),
+		act : pacman!Action(DONEBY=~1, FRAME=~rec.FRAME, DIRECTION=~5)
 	to 
-		s : P!GameState(STATE=~4, record=~rec),
-		rec: P!Record,
-		pac: P!Pacman,
-		grid1: P!Grid(hasPlayer=~pac)
+		s : pacman!GameState(STATE=~4, record=~rec),
+		rec: pacman!Record,
+		pac: pacman!Pacman,
+		grid1: pacman!Grid(hasPlayer=~pac)
 }
 
 rule ghostMoveLeft{
 	from
-		s : P!GameState(STATE=~4,record=~rec),
-		rec: P!Record,
-		ghost: P!Ghost,
-		grid2: P!Grid,
-		grid1: P!Grid(hasEnemy=~ghost, left=~grid2),
-		act : P!Action(DONEBY=~2, FRAME=~rec.FRAME, DIRECTION=~1)
+		s : pacman!GameState(STATE=~4,record=~rec),
+		rec: pacman!Record,
+		ghost: pacman!Ghost,
+		grid2: pacman!Grid,
+		grid1: pacman!Grid(hasEnemy=~ghost, left=~grid2),
+		act : pacman!Action(DONEBY=~2, FRAME=~rec.FRAME, DIRECTION=~1)
 	to 
-		s : P!GameState(STATE=~5,record=~rec),
-		rec: P!Record,
-		ghost: P!Ghost,
-		grid2: P!Grid(hasEnemy=~ghost),
-		grid1: P!Grid(left=~grid2)
+		s : pacman!GameState(STATE=~5,record=~rec),
+		rec: pacman!Record,
+		ghost: pacman!Ghost,
+		grid2: pacman!Grid(hasEnemy=~ghost),
+		grid1: pacman!Grid(left=~grid2)
 }
 
 rule ghostMoveRight{
 	from
-		s : P!GameState(STATE=~4,record=~rec),
-		rec: P!Record,
-		ghost: P!Ghost,
-		grid2: P!Grid,
-		grid1: P!Grid(hasEnemy=~ghost, right=~grid2),
-		act : P!Action(DONEBY=~2, FRAME=~rec.FRAME, DIRECTION=~2)
+		s : pacman!GameState(STATE=~4,record=~rec),
+		rec: pacman!Record,
+		ghost: pacman!Ghost,
+		grid2: pacman!Grid,
+		grid1: pacman!Grid(hasEnemy=~ghost, right=~grid2),
+		act : pacman!Action(DONEBY=~2, FRAME=~rec.FRAME, DIRECTION=~2)
 	to 
-		s : P!GameState(STATE=~5,record=~rec),
-		rec: P!Record,
-		ghost: P!Ghost,
-		grid2: P!Grid(hasEnemy=~ghost),
-		grid1: P!Grid(right=~grid2)
+		s : pacman!GameState(STATE=~5,record=~rec),
+		rec: pacman!Record,
+		ghost: pacman!Ghost,
+		grid2: pacman!Grid(hasEnemy=~ghost),
+		grid1: pacman!Grid(right=~grid2)
 }
 
 rule ghostMoveTop{
 	from
-		s : P!GameState(STATE=~4,record=~rec),
-		rec: P!Record,
-		ghost: P!Ghost,
-		grid2: P!Grid,
-		grid1: P!Grid(hasEnemy=~ghost, top=~grid2),
-		act : P!Action(DONEBY=~2, FRAME=~rec.FRAME, DIRECTION=~3)
+		s : pacman!GameState(STATE=~4,record=~rec),
+		rec: pacman!Record,
+		ghost: pacman!Ghost,
+		grid2: pacman!Grid,
+		grid1: pacman!Grid(hasEnemy=~ghost, top=~grid2),
+		act : pacman!Action(DONEBY=~2, FRAME=~rec.FRAME, DIRECTION=~3)
 	to 
-		s : P!GameState(STATE=~5,record=~rec),
-		rec: P!Record,
-		ghost: P!Ghost,
-		grid2: P!Grid(hasEnemy=~ghost),
-		grid1: P!Grid(top=~grid2)
+		s : pacman!GameState(STATE=~5,record=~rec),
+		rec: pacman!Record,
+		ghost: pacman!Ghost,
+		grid2: pacman!Grid(hasEnemy=~ghost),
+		grid1: pacman!Grid(top=~grid2)
 }
 
 rule ghostMoveBottom{
 	from
-		s : P!GameState(STATE=~4,record=~rec),
-		rec: P!Record,
-		ghost: P!Ghost,
-		grid2: P!Grid,
-		grid1: P!Grid(hasEnemy=~ghost, bottom=~grid2),
-		act : P!Action(DONEBY=~2, FRAME=~rec.FRAME, DIRECTION=~4)
+		s : pacman!GameState(STATE=~4,record=~rec),
+		rec: pacman!Record,
+		ghost: pacman!Ghost,
+		grid2: pacman!Grid,
+		grid1: pacman!Grid(hasEnemy=~ghost, bottom=~grid2),
+		act : pacman!Action(DONEBY=~2, FRAME=~rec.FRAME, DIRECTION=~4)
 	to 
-		s : P!GameState(STATE=~5,record=~rec),
-		rec: P!Record,
-		ghost: P!Ghost,
-		grid2: P!Grid(hasEnemy=~ghost),
-		grid1: P!Grid(bottom=~grid2)
+		s : pacman!GameState(STATE=~5,record=~rec),
+		rec: pacman!Record,
+		ghost: pacman!Ghost,
+		grid2: pacman!Grid(hasEnemy=~ghost),
+		grid1: pacman!Grid(bottom=~grid2)
 }
 
 rule ghostStay{
 	from
-		s : P!GameState(STATE=~4,record=~rec),
-		rec: P!Record,
-		ghost: P!Ghost,
-		grid1: P!Grid(hasEnemy=~ghost),
-		act : P!Action(DONEBY=~2, FRAME=~rec.FRAME, DIRECTION=~5)
+		s : pacman!GameState(STATE=~4,record=~rec),
+		rec: pacman!Record,
+		ghost: pacman!Ghost,
+		grid1: pacman!Grid(hasEnemy=~ghost),
+		act : pacman!Action(DONEBY=~2, FRAME=~rec.FRAME, DIRECTION=~5)
 	to 
-		s : P!GameState(STATE=~5,record=~rec),
-		rec: P!Record,
-		ghost: P!Ghost,
-		grid1: P!Grid(hasEnemy=~ghost)
+		s : pacman!GameState(STATE=~5,record=~rec),
+		rec: pacman!Record,
+		ghost: pacman!Ghost,
+		grid1: pacman!Grid(hasEnemy=~ghost)
 }
 
 
 rule Collect{
 	from
-		s : P!GameState(STATE=~5,record=~rec),
-		rec : P!Record,
-		pac: P!Pacman,
-		gem: P!Gem,
-		grid : P!Grid(hasPlayer=~pac, hasGem=~gem)
+		s : pacman!GameState(STATE=~5,record=~rec),
+		rec : pacman!Record,
+		pac: pacman!Pacman,
+		gem: pacman!Gem,
+		grid : pacman!Grid(hasPlayer=~pac, hasGem=~gem)
 	to 
-		s : P!GameState(STATE=~5,record=~recNew),
-		grid : P!Grid(hasPlayer=~pac),
-		pac: P!Pacman,
-		recNew: P!Record(FRAME=~rec.FRAME, SCORE=~rec.SCORE+100)
+		s : pacman!GameState(STATE=~5,record=~recNew),
+		grid : pacman!Grid(hasPlayer=~pac),
+		pac: pacman!Pacman,
+		recNew: pacman!Record(FRAME=~rec.FRAME, SCORE=~rec.SCORE+100)
 }
 
 
 
 rule Kill{
 	from
-		s : P!GameState(STATE=~5),
-		ghost: P!Ghost,
-		pac : P!Pacman,
-		grid : P!Grid (hasPlayer=~pac, hasEnemy=~ghost)	
+		s : pacman!GameState(STATE=~5),
+		ghost: pacman!Ghost,
+		pac : pacman!Pacman,
+		grid : pacman!Grid (hasPlayer=~pac, hasEnemy=~ghost)	
 	to
-		s: P!GameState(STATE=~6),
-		ghost: P!Ghost,
-		grid : P!Grid (hasEnemy=~ghost)
+		s: pacman!GameState(STATE=~6),
+		ghost: pacman!Ghost,
+		grid : pacman!Grid (hasEnemy=~ghost)
 }
 
 
 
 rule UpdateFrame{
 	from
-		s : P!GameState(STATE=~5,record=~rec),
-		rec : P!Record,
-		pac : P!Pacman
+		s : pacman!GameState(STATE=~5,record=~rec),
+		rec : pacman!Record,
+		pac : pacman!Pacman
 	to
-		s: P!GameState(STATE=~3,record=~recNew),
-		pac : P!Pacman,
-		recNew: P!Record(FRAME=~rec.FRAME+1, SCORE=~rec.SCORE)
+		s: pacman!GameState(STATE=~3,record=~recNew),
+		pac : pacman!Pacman,
+		recNew: pacman!Record(FRAME=~rec.FRAME+1, SCORE=~rec.SCORE)
 }
 
 
