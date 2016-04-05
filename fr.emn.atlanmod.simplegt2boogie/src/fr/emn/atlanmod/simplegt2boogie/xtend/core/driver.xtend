@@ -114,7 +114,8 @@ class driver {
 		
 		«FOR e : mod.elements»
 			===
-			«genModuleElement_apply(e)»
+			««««genModuleElement_apply(e)»»»»
+			«genModuleElement_match(e)»
 		«ENDFOR»
 	'''
 
@@ -123,6 +124,11 @@ class driver {
 		_PlaceHolder
 	'''
 
+	// dispatcher
+	def dispatch genModuleElement_match(ModuleElement element) '''
+		_PlaceHolder
+	'''
+	
 	def genOutputElementType(OutputElement e){
 		return getModel(e.type)+"$"+e.type.name
 	}
@@ -134,6 +140,55 @@ class driver {
 	def genModelElementType(VariableDeclaration v){
 		return getModel(v.type)+"$"+v.type.name
 	}
+	
+	def dispatch genModuleElement_match(Rule r) '''
+	procedure «r.name»_match(«FOR i : r.input.elements SEPARATOR ", "»«i.varName»: ref«ENDFOR») returns (r: bool);
+	// alloc
+	«FOR i : r.input.elements»
+	requires «i.varName» != null && read(«getHeapName», «i.varName», alloc) && dtype(«i.varName») <: «genIutputElementType(i)»;
+	«ENDFOR»
+	//injective matching
+	// structural matching
+	«FOR i : r.input.elements»
+		«FOR b : i.bindings»
+			«IF isPrimitive(fMap.get(genIutputElementType(i)+"."+b.property))»
+			«ELSEIF b.expr instanceof VariableExp»
+				requires read(«getHeapName», «i.varName», «genIutputElementType(i)».«b.property») == «printOCL(b.expr, false)»;
+			«ELSE»
+				error, case analysis failed, not recognised PAC pattern.
+			«ENDIF»
+		«ENDFOR»
+	«ENDFOR»
+	ensures r <==> (
+	true
+	«FOR i : r.input.elements »
+		«FOR b : i.bindings »
+			«IF isPrimitive(fMap.get(genIutputElementType(i)+"."+b.property))»
+				&& read(«getHeapName», «i.varName», «genIutputElementType(i)».«b.property») == «printOCL(b.expr, false)»
+			«ENDIF»
+		«ENDFOR»
+	«ENDFOR»
+	«FOR n : r.nac »
+		«FOR e : n.elements»
+			«FOR b : e.bindings »
+				«IF isPrimitive(fMap.get(genIutputElementType(e)+"."+b.property))»
+					&& read(«getHeapName», «e.varName», «genIutputElementType(e)».«b.property») != «printOCL(b.expr, false)»
+				«ELSEIF b.expr instanceof VariableExp»
+					«var bind = b.expr as VariableExp»
+					«IF r.input.elements.contains(bind)»
+					&& read(«getHeapName», «e.varName», «genIutputElementType(e)».«b.property») != «printOCL(b.expr, false)»
+					«ELSE»
+					&& !(dtype(read(«getHeapName», «e.varName», «genIutputElementType(e)».«b.property»)) <: «genModelElementType(bind.referredVariable)»)
+					«ENDIF»
+				«ELSE»
+					error, case analysis failed, not recognised nac pattern.
+				«ENDIF»
+			«ENDFOR»
+		«ENDFOR»	
+	«ENDFOR»
+	);
+	'''
+	
 	
 	// simplegt rule apply
 	def dispatch genModuleElement_apply(Rule r) '''
@@ -165,7 +220,7 @@ class driver {
 						«IF r.input.elements.contains(bind)»
 						requires read(«getHeapName», «e.varName», «genIutputElementType(e)».«b.property») != «printOCL(b.expr, false)»;
 						«ELSE»
-						requires !(dtype(read(«getHeapName», «e.varName», «genIutputElementType(e)».«b.property»)) <: «genModelElementType(bind.referredVariable)»)
+						requires !(dtype(read(«getHeapName», «e.varName», «genIutputElementType(e)».«b.property»)) <: «genModelElementType(bind.referredVariable)»);
 						«ENDIF»
 					«ELSE»
 						error, case analysis failed, not recognised nac pattern.
