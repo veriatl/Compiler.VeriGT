@@ -131,6 +131,10 @@ class driver {
 		return getModel(e.type)+"$"+e.type.name
 	}
 	
+	def genModelElementType(VariableDeclaration v){
+		return getModel(v.type)+"$"+v.type.name
+	}
+	
 	// simplegt rule apply
 	def dispatch genModuleElement_apply(Rule r) '''
 		«var addElems = listDifference1(r.output.elements, r.input.elements)»
@@ -152,7 +156,22 @@ class driver {
 		«ENDFOR»
 		// nac
 		«FOR n : r.nac»
-				
+			«FOR e : n.elements»
+				«FOR b : e.bindings»
+					«IF isPrimitive(fMap.get(genIutputElementType(e)+"."+b.property))»
+						requires read(«getHeapName», «e.varName», «genIutputElementType(e)».«b.property») != «printOCL(b.expr, false)»;
+					«ELSEIF b.expr instanceof VariableExp»
+						«var bind = b.expr as VariableExp»
+						«IF r.input.elements.contains(bind)»
+						requires read(«getHeapName», «e.varName», «genIutputElementType(e)».«b.property») != «printOCL(b.expr, false)»;
+						«ELSE»
+						requires !(dtype(read(«getHeapName», «e.varName», «genIutputElementType(e)».«b.property»)) <: «genModelElementType(bind.referredVariable)»)
+						«ENDIF»
+					«ELSE»
+						error, case analysis failed, not recognised nac pattern.
+					«ENDIF»
+				«ENDFOR»
+			«ENDFOR»	
 		«ENDFOR»
 		modifies «getHeapName»;
 		ensures $Well_form(«getHeapName»);
