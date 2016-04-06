@@ -114,8 +114,9 @@ class driver {
 		
 		«FOR e : mod.elements»
 			===
-			««««genModuleElement_apply(e)»»»»
-			«genModuleElement_match(e)»
+			««« «genModuleElement_apply(e)» »»»
+			««« «genModuleElement_match(e)» »»»
+			«genStructuralPatternMatch(e)»
 		«ENDFOR»
 	'''
 
@@ -126,6 +127,11 @@ class driver {
 
 	// dispatcher
 	def dispatch genModuleElement_match(ModuleElement element) '''
+		_PlaceHolder
+	'''
+	
+	// dispatcher
+	def dispatch genStructuralPatternMatch(ModuleElement element) '''
 		_PlaceHolder
 	'''
 	
@@ -140,6 +146,75 @@ class driver {
 	def genModelElementType(VariableDeclaration v){
 		return getModel(v.type)+"$"+v.type.name
 	}
+	
+	
+	def dispatch genStructuralPatternMatch(Rule r) '''
+	function findPatterns_«r.name»(«getBHeap()»: HeapType): Seq (Seq ref);
+	// structure filter
+	axiom (forall «getBHeap()»: HeapType :: Seq#Length(findPatterns_«r.name»(«getBHeap()»)) >= 0);
+	// input elements size
+	axiom (forall «getBHeap()»: HeapType ::
+		(forall i: int :: inRange(i,0,Seq#Length(findPatterns_«r.name»(«getBHeap()»))) ==> 
+			Seq#Length(Seq#Index(findPatterns_«r.name»(«getBHeap()»),i)) == «r.input.elements.size()»)
+	);
+	«var it=0»
+	«FOR i : r.input.elements»
+	// «i.varName» != null && read(«getHeapName», «i.varName», alloc) && dtype(«i.varName») <: «genIutputElementType(i)»;
+	axiom (forall «getBHeap()»: HeapType ::	
+		(forall i: int :: inRange(i,0,Seq#Length(findPatterns_«r.name»(«getBHeap()»))) ==> 
+			Seq#Index(Seq#Index(findPatterns_«r.name»(«getBHeap()»),i),«it») != null 
+			&& read(«getBHeap()»,Seq#Index(Seq#Index(findPatterns_«r.name»(«getBHeap()»),i), «it»),alloc) 
+			&& dtype(Seq#Index(Seq#Index(findPatterns_«r.name»(«getBHeap()»),i),«it»)) == «genIutputElementType(i)»
+		 )
+	);
+	«{it = it+1;""}»
+	«ENDFOR»
+	//injective matching
+	«var it1=0»	
+	«FOR i : r.input.elements»
+		«var it2=it1»
+		«FOR j : r.input.elements.subList(r.input.elements.indexOf(i), r.input.elements.size())»
+			«IF i != j && genIutputElementType(i)==genIutputElementType(j)»
+			axiom (forall «getBHeap()»: HeapType ::
+					(forall i: int :: inRange(i,0,Seq#Length(findPatterns_«r.name»(«getBHeap()»))) ==> 
+						Seq#Index(Seq#Index(findPatterns_«r.name»(«getBHeap()»),i),«it1») != Seq#Index(Seq#Index(findPatterns_«r.name»(«getBHeap()»),i),«it2»)));
+			«ENDIF»
+			«{it2 = it2+1;""}»
+		«ENDFOR»
+		«{it1 = it1+1;""}»
+	«ENDFOR»			
+	«FOR i : r.input.elements»
+		«FOR b : i.bindings»
+			«IF isPrimitive(fMap.get(genIutputElementType(i)+"."+b.property))»
+			«ELSEIF b.expr instanceof VariableExp»
+				«var bind = (b.expr as VariableExp).referredVariable.varName»
+				// structural matching
+				axiom (forall «getBHeap()»: HeapType ::
+					(forall i: int :: inRange(i,0,Seq#Length(findPatterns_«r.name»(«getBHeap()»))) ==> 
+						 read(«getHeapName», «genInputElementIndex(r, r.input.elements, i.varName)», «genIutputElementType(i)».«b.property») == «genInputElementIndex(r, r.input.elements, bind)»;	
+					)
+				);
+			«ELSE»
+				error, case analysis failed, not recognised PAC pattern.
+			«ENDIF»
+		«ENDFOR»
+	«ENDFOR»
+	'''
+	
+	def genInputElementIndex(Rule r, EList<InputElement> list, String s) {
+		var i = 0
+		var res = ""
+		for(e : list){
+			if(e.varName == s){
+				res  = String.format("Seq#Index(Seq#Index(findPatterns_%s(%s),i), %s)", r.name, getBHeap(),i)
+			}
+			i = i+1
+		}
+		return res
+	}
+	
+
+	
 	
 	def dispatch genModuleElement_match(Rule r) '''
 	procedure «r.name»_match(«FOR i : r.input.elements SEPARATOR ", "»«i.varName»: ref«ENDFOR») returns (r: bool);
@@ -397,12 +472,19 @@ class driver {
 		r
 	}
 	
+	// get src heap
 	def getHeapName() {
 		"$srcHeap"
 	}
 	
+	// get access table
 	def getSetTableName(){
 		"$acc"
+	}
+	
+	// get a bounded variable for heap
+	def getBHeap() {
+		return "_hp"
 	}
 	
 	def oclEqualCheck(OclExpression expr1, OclExpression expr2) {
