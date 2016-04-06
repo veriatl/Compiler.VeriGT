@@ -148,6 +148,13 @@ class driver {
 	requires «i.varName» != null && read(«getHeapName», «i.varName», alloc) && dtype(«i.varName») <: «genIutputElementType(i)»;
 	«ENDFOR»
 	//injective matching
+	«FOR i : r.input.elements»
+		«FOR j : r.input.elements.subList(r.input.elements.indexOf(i), r.input.elements.size())»
+			«IF i != j && genIutputElementType(i)==genIutputElementType(j)»
+				requires «i.varName» != «j.varName»;
+			«ENDIF»
+		«ENDFOR»
+	«ENDFOR»
 	// structural matching
 	«FOR i : r.input.elements»
 		«FOR b : i.bindings»
@@ -188,6 +195,8 @@ class driver {
 	«ENDFOR»
 	);
 	'''
+	
+
 	
 	
 	// simplegt rule apply
