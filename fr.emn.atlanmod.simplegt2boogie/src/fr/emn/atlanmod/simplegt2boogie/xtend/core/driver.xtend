@@ -159,7 +159,7 @@ class driver {
 	);
 	«var it=0»
 	«FOR i : r.input.elements»
-	// «i.varName» != null && read(«getHeapName», «i.varName», alloc) && dtype(«i.varName») <: «genIutputElementType(i)»;
+	// «i.varName» != null && read(«getBHeap», «i.varName», alloc) && dtype(«i.varName») <: «genIutputElementType(i)»;
 	axiom (forall «getBHeap()»: HeapType ::	
 		(forall i: int :: inRange(i,0,Seq#Length(findPatterns_«r.name»(«getBHeap()»))) ==> 
 			Seq#Index(Seq#Index(findPatterns_«r.name»(«getBHeap()»),i),«it») != null 
@@ -191,7 +191,7 @@ class driver {
 				// structural matching
 				axiom (forall «getBHeap()»: HeapType ::
 					(forall i: int :: inRange(i,0,Seq#Length(findPatterns_«r.name»(«getBHeap()»))) ==> 
-						 read(«getHeapName», «genInputElementIndex(r, r.input.elements, i.varName)», «genIutputElementType(i)».«b.property») == «genInputElementIndex(r, r.input.elements, bind)»;	
+						 read(«getBHeap», «genInputElementIndex(r, r.input.elements, i.varName)», «genIutputElementType(i)».«b.property») == «genInputElementIndex(r, r.input.elements, bind)»;	
 					)
 				);
 			«ELSE»
@@ -199,6 +199,38 @@ class driver {
 			«ENDIF»
 		«ENDFOR»
 	«ENDFOR»
+	// surjective
+	axiom (forall «getBHeap()»: HeapType ::
+		(forall «FOR i : r.input.elements SEPARATOR ", "»«i.varName»«ENDFOR»: ref ::
+			true
+			«FOR i : r.input.elements»
+			&& «i.varName» != null && read(«getBHeap», «i.varName», alloc) && dtype(«i.varName») <: «genIutputElementType(i)»
+			«ENDFOR»
+			«FOR i : r.input.elements»
+				«FOR j : r.input.elements.subList(r.input.elements.indexOf(i), r.input.elements.size())»
+					«IF i != j && genIutputElementType(i)==genIutputElementType(j)»
+						&& «i.varName» != «j.varName»;
+					«ENDIF»
+				«ENDFOR»
+			«ENDFOR»
+			«FOR i : r.input.elements»
+				«FOR b : i.bindings»
+					«IF isPrimitive(fMap.get(genIutputElementType(i)+"."+b.property))»
+					«ELSEIF b.expr instanceof VariableExp»
+						&& read(«getBHeap», «i.varName», «genIutputElementType(i)».«b.property») == «printOCL(b.expr, false)»;
+					«ELSE»
+						error, case analysis failed, not recognised PAC pattern.
+					«ENDIF»
+				«ENDFOR»
+			«ENDFOR»
+			==> 	
+			Seq#Contains(findPatterns_«r.name»(«getBHeap()»), «genInputSequence(r.input.elements)»)
+		)	
+	);	
+
+	
+	
+	
 	'''
 	
 	def genInputElementIndex(Rule r, EList<InputElement> list, String s) {
