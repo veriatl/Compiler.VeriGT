@@ -30,6 +30,9 @@ import org.eclipselabs.simplegt.OutputElement
 import org.eclipselabs.simpleocl.OclType
 import java.util.Set
 import java.util.HashSet
+import java.io.File
+import com.google.common.io.Files
+import com.google.common.base.Charsets
 
 // todo
 //- nac elements
@@ -53,7 +56,9 @@ class driver {
 		fMap = getsfInfo(srcmm)
 		
 		for (content : resource.contents) {
-			println(generateModule(content))
+			Files.write(generateModule_applys(content), new File('./ATL_apply.bpl'), Charsets.UTF_8)
+			Files.write(generateModule_matches(content), new File('./ATL_match.bpl'), Charsets.UTF_8)
+			Files.write(generateModule_sfs(content), new File('./StructuralPatternMatching.bpl'), Charsets.UTF_8)
 		}
 	}
 	
@@ -101,25 +106,46 @@ class driver {
 		Resource$Factory.Registry.INSTANCE.extensionToFactoryMap.put("ecore", new EcoreResourceFactoryImpl());
 	}
 
+
+		
+		
 	/* Code generation starts */
 	// dispatcher
-	def dispatch generateModule(EObject it) '''
+	def dispatch generateModule_applys(EObject it) '''
 		_PlaceHolder
 	'''
-
+	
 	// module
-	def dispatch generateModule(Module mod) '''
+	def dispatch generateModule_applys(Module mod) '''		
+	«FOR e : mod.elements»
+		«genModuleElement_apply(e)»
 		
-		Module: «mod.name» 
-		
-		«FOR e : mod.elements»
-			===
-			««« «genModuleElement_apply(e)» »»»
-			««« «genModuleElement_match(e)» »»»
-			«genStructuralPatternMatch(e)»
-		«ENDFOR»
+	«ENDFOR»
 	'''
 
+	// dispatcher
+	def dispatch generateModule_matches(EObject it) '''
+		_PlaceHolder
+	'''
+	
+	// module
+	def dispatch generateModule_matches(Module mod) '''		
+	«FOR e : mod.elements»
+		«genModuleElement_match(e)»
+		
+	«ENDFOR»
+	'''
+		// dispatcher
+	def dispatch generateModule_sfs(EObject it) '''
+		_PlaceHolder
+	'''
+	
+	// module
+	def dispatch generateModule_sfs(Module mod) '''		
+	«FOR e : mod.elements»
+		«genStructuralPatternMatch(e)»	
+	«ENDFOR»
+	'''
 	// dispatcher
 	def dispatch genModuleElement_apply(ModuleElement element) '''
 		_PlaceHolder
