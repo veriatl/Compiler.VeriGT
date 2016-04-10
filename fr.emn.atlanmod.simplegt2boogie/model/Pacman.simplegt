@@ -1,4 +1,4 @@
-module simplyDisco;
+module pacman;
 
 
 metamodel pacman : 'platform:/resource/Pacman/metamodels/Pacman.ecore';

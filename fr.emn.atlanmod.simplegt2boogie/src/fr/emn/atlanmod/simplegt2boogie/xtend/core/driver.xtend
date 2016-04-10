@@ -41,13 +41,12 @@ class driver {
 	var fMap = new HashMap<String, String>
 	
 	def static void main(String[] args) {
-		new driver().generate("model/Pacman.simplegt", "model/Pacman.ecore")
+		new driver().generate(args.get(0), args.get(1), args.get(2))
 		println("finished")
 	}
 
 
-
-	def generate(String file, String mm) {
+	def generate(String file, String mm, String path) {
 		doEMFSetup
 		val rs = new ResourceSetImpl
 		val resource = rs.getResource(URI.createURI(file), true)
@@ -56,9 +55,9 @@ class driver {
 		fMap = getsfInfo(srcmm)
 		
 		for (content : resource.contents) {
-			Files.write(generateModule_applys(content), new File('./ATL_apply.bpl'), Charsets.UTF_8)
-			Files.write(generateModule_matches(content), new File('./ATL_match.bpl'), Charsets.UTF_8)
-			Files.write(generateModule_sfs(content), new File('./StructuralPatternMatching.bpl'), Charsets.UTF_8)
+			Files.write(generateModule_applys(content), new File(path+'ATL_apply.bpl'), Charsets.UTF_8)
+			Files.write(generateModule_matches(content), new File(path+'ATL_match.bpl'), Charsets.UTF_8)
+			Files.write(generateModule_sfs(content), new File(path+'StructuralPatternMatching.bpl'), Charsets.UTF_8)
 		}
 	}
 	
@@ -217,7 +216,7 @@ class driver {
 				// structural matching
 				axiom (forall «getBHeap()»: HeapType ::
 					(forall i: int :: inRange(i,0,Seq#Length(findPatterns_«r.name»(«getBHeap()»))) ==> 
-						 read(«getBHeap», «genInputElementIndex(r, r.input.elements, i.varName)», «genIutputElementType(i)».«b.property») == «genInputElementIndex(r, r.input.elements, bind)»;	
+						 read(«getBHeap», «genInputElementIndex(r, r.input.elements, i.varName)», «genIutputElementType(i)».«b.property») == «genInputElementIndex(r, r.input.elements, bind)»
 					)
 				);
 			«ELSE»
@@ -235,7 +234,7 @@ class driver {
 			«FOR i : r.input.elements»
 				«FOR j : r.input.elements.subList(r.input.elements.indexOf(i), r.input.elements.size())»
 					«IF i != j && genIutputElementType(i)==genIutputElementType(j)»
-						&& «i.varName» != «j.varName»;
+						&& «i.varName» != «j.varName»
 					«ENDIF»
 				«ENDFOR»
 			«ENDFOR»
@@ -243,7 +242,7 @@ class driver {
 				«FOR b : i.bindings»
 					«IF isPrimitive(fMap.get(genIutputElementType(i)+"."+b.property))»
 					«ELSEIF b.expr instanceof VariableExp»
-						&& read(«getBHeap», «i.varName», «genIutputElementType(i)».«b.property») == «printOCL(b.expr, false)»;
+						&& read(«getBHeap», «i.varName», «genIutputElementType(i)».«b.property») == «printOCL(b.expr, false)»
 					«ELSE»
 						error, case analysis failed, not recognised PAC pattern.
 					«ENDIF»
@@ -339,8 +338,7 @@ class driver {
 		«var ib = new HashMap<String, OclExpression>»	
 		«var ob = new HashMap<String, OclExpression>»
 		«var frame = new HashMap<String, Set<String>>»
-		procedure «r.name»_apply(«FOR i : r.input.elements SEPARATOR ", "»«i.varName»: ref«ENDFOR»«IF addElems.size()!=0», «FOR e : addElems SEPARATOR ", "»«e.varName»: ref«ENDFOR»«ENDIF» ) returns ();
-		requires $Well_form(«getHeapName»);
+		procedure «r.name»_apply(__trace__: ref,«FOR i : r.input.elements SEPARATOR ", "»«i.varName»: ref«ENDFOR»«IF addElems.size()!=0», «FOR e : addElems SEPARATOR ", "»«e.varName»: ref«ENDFOR»«ENDIF» ) returns ();
 		// syntactic matching
 		requires Seq#Contains(findPatterns_«r.name»($srcHeap), «genInputSequence(r.input.elements)»);
 		// semantic matching
@@ -371,7 +369,6 @@ class driver {
 			«ENDFOR»	
 		«ENDFOR»
 		modifies «getHeapName»;
-		ensures $Well_form(«getHeapName»);
 		«««ADD ELEM»»»
 		«FOR e : addElems»
 		ensures «e.varName»!=null && read(«getHeapName», «e.varName», alloc) && dtype(«e.varName») <: «genOutputElementType(e)»;
@@ -424,7 +421,7 @@ class driver {
 				«ENDIF»
 			«««REMOVE»»»
 			«ELSE»
-			ensures read(«getHeapName», «obj», «field») == «printDefaultVal(field)»»;
+			ensures read(«getHeapName», «obj», «field») == «printDefaultVal(field)»;
 			ensures !isset(«getSetTableName», «obj», «field»);
 			«IF frame.containsKey(obj)»
 				«{frame.get(obj).add(field);""}»
@@ -439,6 +436,7 @@ class driver {
 			«var obj = k.split("_sep_").get(0)»
 			«var field = k.split("_sep_").get(1)»
 			ensures read(«getHeapName», «obj», «field») == «printOCL(ob.get(k), true)»;
+			ensures isset(«getSetTableName», «obj», «field»);
 			«IF frame.containsKey(obj)»
 				«{frame.get(obj).add(field);""}»
 			«ELSE»
@@ -564,7 +562,7 @@ class driver {
 	def dispatch printOCL(VariableExp expr, boolean old) '''«expr.referredVariable.varName»'''
 	
 	def dispatch printOCL(PropertyCallExp expr, boolean old) '''
-	«FOR call : expr.calls»«IF expr.source instanceof VariableExp && call instanceof NavigationOrAttributeCall» read(«IF old»old(«getHeapName»)«ELSE»«getHeapName»«ENDIF», «(expr.source as VariableExp).referredVariable.varName», «(expr.source as VariableExp).referredVariable.type.name».«(call as NavigationOrAttributeCall).name»)«ENDIF»	«ENDFOR»'''
+	«FOR call : expr.calls»«IF expr.source instanceof VariableExp && call instanceof NavigationOrAttributeCall» read(«IF old»old(«getHeapName»)«ELSE»«getHeapName»«ENDIF», «(expr.source as VariableExp).referredVariable.varName», «(expr.source as VariableExp).referredVariable.type.model»$«(expr.source as VariableExp).referredVariable.type.name».«(call as NavigationOrAttributeCall).name»)«ENDIF»	«ENDFOR»'''
 	
 	def dispatch printOCL(AddOpCallExp expr, boolean old)''' «printOCL(expr.source, true)»+«printOCL(expr.argument, true)» '''
 	
