@@ -339,6 +339,8 @@ class driver {
 		«var ob = new HashMap<String, OclExpression>»
 		«var frame = new HashMap<String, Set<String>>»
 		procedure «r.name»_apply(__trace__: ref,«FOR i : r.input.elements SEPARATOR ", "»«i.varName»: ref«ENDFOR»«IF addElems.size()!=0», «FOR e : addElems SEPARATOR ", "»«e.varName»: ref«ENDFOR»«ENDIF» ) returns ();
+		// well_form inputs
+		requires well_formed(«getHeapName», «getSetTableName»);
 		// syntactic matching
 		requires Seq#Contains(findPatterns_«r.name»($srcHeap), «genInputSequence(r.input.elements)»);
 		// semantic matching
@@ -368,17 +370,29 @@ class driver {
 				«ENDFOR»
 			«ENDFOR»	
 		«ENDFOR»
-		modifies «getHeapName»;
-		«««ADD ELEM»»»
-		«FOR e : addElems»
-		ensures «e.varName»!=null && read(«getHeapName», «e.varName», alloc) && dtype(«e.varName») <: «genOutputElementType(e)»;
-		«IF frame.containsKey(e.varName)»
-		«{frame.get(e.varName).add("alloc");""}»
-		«ELSE»
-		«{frame.put(e.varName, new HashSet<String>());""}»
-		«{frame.get(e.varName).add("alloc");""}»
-		«ENDIF»
+		// acc of structural/semantic matching
+		«FOR i : r.input.elements»
+			«FOR b : i.bindings»
+				requires isset(«getSetTableName», «i.varName», «genIutputElementType(i)».«b.property»);
+			«ENDFOR»
 		«ENDFOR»
+		// add elements are allocated with correct type
+		«FOR o : addElems»
+			requires «o.varName» != null && read(«getHeapName», «o.varName», alloc);
+			requires (forall<alpha> f: Field alpha :: f!=alloc ==> !isset(«getSetTableName», «o.varName», f));
+		«ENDFOR»
+		modifies «getHeapName», «getSetTableName»;
+		ensures well_formed(«getHeapName», «getSetTableName»);
+		«««ADD ELEM»»»
+		««««FOR e : addElems»
+		«««ensures «e.varName»!=null && read(«getHeapName», «e.varName», alloc) && dtype(«e.varName») <: «genOutputElementType(e)»;
+		««««IF frame.containsKey(e.varName)»
+		««««{frame.get(e.varName).add("alloc");""}»
+		««««ELSE»
+		««««{frame.put(e.varName, new HashSet<String>());""}»
+		««««{frame.get(e.varName).add("alloc");""}»
+		««««ENDIF»
+		««««ENDFOR»
 		«««DEL ELEM»»»
 		«FOR e : delElems»
 		ensures ! read(«getHeapName», «e.varName», alloc);
@@ -446,8 +460,16 @@ class driver {
 			«ENDIF»
 		«ENDFOR»
 		ensures (forall<alpha> o:ref,f:Field alpha::
-		  o!=null && read(old($srcHeap),o,alloc) ==> 
-		  (read($srcHeap,o,f)==read(old($srcHeap),o,f)) ||
+		  o!=null && read(old(«getHeapName»),o,alloc) ==> 
+		  (read(«getHeapName»,o,f)==read(old(«getHeapName»),o,f)) ||
+		  «IF frame.keySet.size!=0»
+		  	«FOR o:frame.keySet SEPARATOR "||"»
+		  	(o == «o» && («FOR f:frame.get(o) SEPARATOR "||"» f == «f»«ENDFOR»))
+		  	«ENDFOR»
+		  «ENDIF»
+		);
+		ensures (forall<alpha> o:ref,f:Field alpha::
+		  (isset(«getSetTableName»,o,f)==isset(old(«getSetTableName»),o,f)) ||
 		  «IF frame.keySet.size!=0»
 		  	«FOR o:frame.keySet SEPARATOR "||"»
 		  	(o == «o» && («FOR f:frame.get(o) SEPARATOR "||"» f == «f»«ENDFOR»))
