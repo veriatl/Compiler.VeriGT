@@ -33,6 +33,7 @@ import java.util.HashSet
 import java.io.File
 import com.google.common.io.Files
 import com.google.common.base.Charsets
+import org.eclipselabs.simplegt.NacPattern
 
 // todo
 //- nac elements
@@ -270,11 +271,30 @@ class driver {
 		return res
 	}
 	
-
+	def genNacInMatch(EList<NacPattern> nac, EList<InputElement> inputs) {
+		var r = new ArrayList<InputElement>();
+		for(n : nac){
+			for(e: n.elements){
+				var add = true;
+				for(i : inputs){
+					if(e.varName == i.varName){
+						add = false;
+					}
+				}
+				
+				if(add){
+					r.add(e)
+				}			
+			}
+			
+		}
+		return r
+	}
 	
-	
+	// don't think SimpleGT should comput nac elements as localVars
 	def dispatch genModuleElement_match(Rule r) '''
-	procedure «r.name»_match(«FOR i : r.input.elements SEPARATOR ", "»«i.varName»: ref«ENDFOR») returns (r: bool);
+	«var nac = genNacInMatch(r.nac, r.input.elements)»
+	procedure «r.name»_match(«FOR i : r.input.elements SEPARATOR ", "»«i.varName»: ref«ENDFOR»«IF nac.size()!=0», «FOR e : nac SEPARATOR ", "»«e.varName»: ref«ENDFOR»«ENDIF») returns (r: bool);
 	// alloc
 	«FOR i : r.input.elements»
 	requires «i.varName» != null && read(«getHeapName», «i.varName», alloc) && dtype(«i.varName») <: «genIutputElementType(i)»;
@@ -327,6 +347,8 @@ class driver {
 	«ENDFOR»
 	);
 	'''
+	
+
 	
 
 	
